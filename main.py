@@ -13,21 +13,20 @@ try:
     import matplotlib.pyplot as plt
 except ImportError:
     print("Need to fix the installation")
-    raise
 
 kernel = np.asarray(
-        [[-69 / 52, -69 / 52, -69 / 52, -69 / 52, -69 / 52, -69 / 52, -69 / 52, -69 / 52, -69 / 52, -69 / 52, -69 / 52],
-         [-69 / 52, -69 / 52, -69 / 52, 1, 1, 1, 1, 1, -69 / 52, -69 / 52, -69 / 52],
-         [-69 / 52, -69 / 52, 1, 1, 1, 1, 1, 1, 1, -69 / 52, -69 / 52],
-         [-69 / 52, 1, 1, 1, 1, 1, 1, 1, 1, 1, -69 / 52],
-         [-69 / 52, 1, 1, 1, 1, 1, 1, 1, 1, 1, -69 / 52],
-         [-69 / 52, 1, 1, 1, 1, 1, 1, 1, 1, 1, -69 / 52],
-         [-69 / 52, 1, 1, 1, 1, 1, 1, 1, 1, 1, -69 / 52],
-         [-69 / 52, 1, 1, 1, 1, 1, 1, 1, 1, 1, -69 / 52],
-         [-69 / 52, -69 / 52, 1, 1, 1, 1, 1, 1, 1, -69 / 52, -69 / 52],
-         [-69 / 52, -69 / 52, -69 / 52, 1, 1, 1, 1, 1, -69 / 52, -69 / 52, -69 / 52],
-         [-69 / 52, -69 / 52, -69 / 52, -69 / 52, -69 / 52, -69 / 52, -69 / 52, -69 / 52, -69 / 52, -69 / 52,
-          -69 / 52]])
+        [[-69 / 58, -69 / 58, -69 / 58, -69 / 58, -69 / 58, -69 / 58, -69 / 58, -69 / 58, -69 / 58, -69 / 58, -69 / 58, -69 / 58],
+         [-69 / 58, -69 / 58, -69 / 58, 1, 1, 1, 1, 1, 1, -69 / 58, -69 / 58, -69 / 58],
+         [-69 / 58, -69 / 58, 1, 1, 1, 1, 1, 1, 1, 1, -69 / 58, -69 / 58],
+         [-69 / 58, -69 / 58, 1, 1, 1, 1, 1, 1, 1, 1, -69 / 58, -69 / 58],
+         [-69 / 58, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, -69 / 58],
+         [-69 / 58, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, -69 / 58],
+         [-69 / 58, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, -69 / 58],
+         [-69 / 58, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, -69 / 58],
+         [-69 / 58, -69 / 58, 1, 1, 1, 1, 1, 1, 1, 1, -69 / 58, -69 / 58],
+         [-69 / 58, -69 / 58, 1, 1, 1, 1, 1, 1, 1, 1, -69 / 58, -69 / 58],
+         [-69 / 58, -69 / 58, -69 / 58, 1, 1, 1, 1, 1, 1, -69 / 58, -69 / 58, -69 / 58],
+         [-69 / 58, -69 / 58, -69 / 58, -69 / 58, -69 / 58, -69 / 58, -69 / 58, -69 / 58, -69 / 58, -69 / 58, -69 / 58, -69 / 58]])
 def processImage(image):
     image = cv2.imread(image)
     image = cv2.cvtColor(src=image, code=cv2.COLOR_BGR2GRAY)
@@ -108,7 +107,10 @@ def test_find_tfl_lights(image_path, json_path=None, fig_num=None):
     """
     Run the attention code
     """
-    image = np.array(Image.open(image_path).convert('L'))
+    image = np.array(Image.open(image_path))
+
+
+
     if json_path is None:
         objects = None
     else:
@@ -120,15 +122,22 @@ def test_find_tfl_lights(image_path, json_path=None, fig_num=None):
 
     output = convolve2D(image, kernel)
 
-
     plt.figure(56)
     plt.clf()
     h = plt.subplot(111)
     plt.imshow(image)
+    img = np.array(Image.open(image_path).convert('L'))
+    convoluted_image = convolve2D(img, kernel)
     plt.figure(57)
     plt.clf()
     plt.subplot(111, sharex=h, sharey=h)
-    plt.imshow(output)
+    plt.imshow(convoluted_image)
+    plt.figure(59)
+    plt.clf()
+    plt.subplot(111, sharex=h, sharey=h)
+    plt.imshow(convoluted_image > 5000)
+
+
 
 
     #red_x, red_y, green_x, green_y = find_tfl_lights(image)
