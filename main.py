@@ -1,5 +1,3 @@
-from numpy import array
-
 try:
     import os
     import json
@@ -12,26 +10,31 @@ try:
     import typing
     from PIL import Image, ImageDraw
 
+    from scipy import signal as sg
+    from scipy.ndimage.filters import maximum_filter
+
+
     import matplotlib.pyplot as plt
 except ImportError:
     print("Need to fix the installation")
     raise
 
-kernel = np.asarray(
-    [[-69 / 58, -69 / 58, -69 / 58, -69 / 58, -69 / 58, -69 / 58, -69 / 58, -69 / 58, -69 / 58, -69 / 58, -69 / 58,
-      -69 / 58],
-     [-69 / 58, -69 / 58, -69 / 58, 1, 1, 1, 1, 1, 1, -69 / 58, -69 / 58, -69 / 58],
-     [-69 / 58, -69 / 58, 1, 1, 1, 1, 1, 1, 1, 1, -69 / 58, -69 / 58],
-     [-69 / 58, -69 / 58, 1, 1, 1, 1, 1, 1, 1, 1, -69 / 58, -69 / 58],
-     [-69 / 58, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, -69 / 58],
-     [-69 / 58, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, -69 / 58],
-     [-69 / 58, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, -69 / 58],
-     [-69 / 58, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, -69 / 58],
-     [-69 / 58, -69 / 58, 1, 1, 1, 1, 1, 1, 1, 1, -69 / 58, -69 / 58],
-     [-69 / 58, -69 / 58, 1, 1, 1, 1, 1, 1, 1, 1, -69 / 58, -69 / 58],
-     [-69 / 58, -69 / 58, -69 / 58, 1, 1, 1, 1, 1, 1, -69 / 58, -69 / 58, -69 / 58],
-     [-69 / 58, -69 / 58, -69 / 58, -69 / 58, -69 / 58, -69 / 58, -69 / 58, -69 / 58, -69 / 58, -69 / 58, -69 / 58,
-      -69 / 58]])
+light = 1
+dark = -69/58
+
+kernel = np.asarray([[dark, dark, dark, dark, dark, dark, dark, dark, dark, dark, dark, dark, dark],
+                     [dark, dark, dark, dark, light, light, light, light, light, dark, dark, dark, dark],
+                     [dark, dark, dark, light, light, light, light, light, light, light, dark, dark, dark],
+                     [dark, dark, light, light, light, light, light, light, light, light, light, dark, dark],
+                     [dark, light, light, light, light, light, light, light, light, light, light, light, dark],
+                     [dark, light, light, light, light, light, light, light, light, light, light, light, dark],
+                     [dark, light, light, light, light, light, light, light, light, light, light, light, dark],
+                     [dark, light, light, light, light, light, light, light, light, light, light, light, dark],
+                     [dark, light, light, light, light, light, light, light, light, light, light, light, dark],
+                     [dark, dark, light, light, light, light, light, light, light, light, light, dark, dark],
+                     [dark, dark, dark, light, light, light, light, light, light, light, dark, dark, dark],
+                     [dark, dark, dark, dark, light, light, light, light, light, dark, dark, dark, dark],
+                     [dark, dark, dark, dark, dark, dark, dark, dark, dark, dark, dark, dark, dark]])
 
 
 # def find_tfl_lights(c_image: np.ndarray, **kwargs):
@@ -44,7 +47,7 @@ kernel = np.asarray(
 #     return [500, 510, 520], [500, 500, 500], [700, 710], [500, 500]
 
 
-### GIVEN CODE TO TEST YOUR IMPLENTATION AND PLOT THE PICTURES
+# GIVEN CODE TO TEST YOUR IMPLENTATION AND PLOT THE PICTURES
 def show_image_and_gt(image, objs, fig_num=None):
     plt.figure(fig_num).clf()
     plt.imshow(image)
@@ -82,6 +85,7 @@ def test_find_tfl_lights(image_path, json_path=None, fig_num=None):
     Run the attention code
     """
     image = np.array(Image.open(image_path))
+
     if json_path is None:
         objects = None
     else:
@@ -102,9 +106,11 @@ def test_find_tfl_lights(image_path, json_path=None, fig_num=None):
     plt.clf()
     plt.subplot(111, sharex=h, sharey=h)
     plt.imshow(Image.open(image_path))
+    
     # for i in lst_red:
     #     red_y, red_x = i
     #     plt.plot(red_x, red_y, 'ro', color='r', markersize=1)
+    
     for i in lst_green:
         green_y, green_x = i
         plt.plot(green_x, green_y, 'ro', color='g', markersize=1)
@@ -113,6 +119,23 @@ def test_find_tfl_lights(image_path, json_path=None, fig_num=None):
     plt.clf()
     plt.subplot(111, sharex=h, sharey=h)
     plt.imshow(convolved_image > 7000)
+
+    # show_image_and_gt(image, objects, fig_num)
+
+    plt.figure(56)
+    plt.clf()
+    h = plt.subplot(111)
+    plt.imshow(image)
+    plt.figure(57)
+    plt.clf()
+    plt.subplot(111, sharex=h, sharey=h)
+    plt.imshow(image)
+
+    convolve2D(image, kernel, padding=0, strides=1)
+
+    # red_x, red_y, green_x, green_y = find_tfl_lights(image)
+    # plt.plot(red_x, red_y, 'ro', color='r', markersize=4)
+    # plt.plot(green_x, green_y, 'ro', color='g', markersize=4)
 
 
 def main(argv=None):
@@ -134,14 +157,21 @@ def main(argv=None):
     flist = [r"C:\Users\IMOE001\images\berlin_000455_000019_leftImg8bit.png"]
     for image in flist:
         json_fn = image.replace('_leftImg8bit.png', '_gtFine_polygons.json')
-        if not os.path.exists(json_fn):
+
+    flist = glob.glob(os.path.join(args.dir, '*_leftImg8bit.png'))
+
+    for image in flist:
+        json_fn = image.replace('_leftImg8bit.png', '_gtFine_polygons.json')
+
+    if not os.path.exists(json_fn):
             json_fn = None
-        test_find_tfl_lights(image, json_fn)
+    test_find_tfl_lights(image, json_fn)
 
     if len(flist):
         print("You should now see some images, with the ground truth marked on them. Close all to quit.")
     else:
         print("Bad configuration?? Didn't find any picture to show")
+
     plt.show(block=True)
 
 
