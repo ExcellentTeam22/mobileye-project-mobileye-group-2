@@ -4,12 +4,15 @@ try:
     import glob
     import argparse
     import cv2
-
     import numpy as np
+    from scipy import signal as sg
+    from scipy.ndimage import maximum_filter
+    import typing
+    from PIL import Image, ImageDraw
+
     from scipy import signal as sg
     from scipy.ndimage.filters import maximum_filter
 
-    from PIL import Image
 
     import matplotlib.pyplot as plt
 except ImportError:
@@ -17,7 +20,7 @@ except ImportError:
     raise
 
 light = 1
-dark = -69/52
+dark = -69/58
 
 kernel = np.asarray([[dark, dark, dark, dark, dark, dark, dark, dark, dark, dark, dark, dark, dark],
                      [dark, dark, dark, dark, light, light, light, light, light, dark, dark, dark, dark],
@@ -34,19 +37,17 @@ kernel = np.asarray([[dark, dark, dark, dark, dark, dark, dark, dark, dark, dark
                      [dark, dark, dark, dark, dark, dark, dark, dark, dark, dark, dark, dark, dark]])
 
 
-def find_tfl_lights(c_image: np.ndarray, **kwargs):
-    """
-    Detect candidates for TFL lights. Use c_image, kwargs and you imagination to implement
-    :param c_image: The image itself as np.uint8, shape of (H, W, 3)
-    :param kwargs: Whatever config you want to pass in here
-    :return: 4-tuple of x_red, y_red, x_green, y_green
-    """
-    ### WRITE YOUR CODE HERE ###
-    ### USE HELPER FUNCTIONS ###
-    return [500, 510, 520], [500, 500, 500], [700, 710], [500, 500]
+# def find_tfl_lights(c_image: np.ndarray, **kwargs):
+#     """
+#     Detect candidates for TFL lights. Use c_image, kwargs and you imagination to implement
+#     :param c_image: The image itself as np.uint8, shape of (H, W, 3)
+#     :param kwargs: Whatever config you want to pass in here
+#     :return: 4-tuple of x_red, y_red, x_green, y_green
+#     """
+#     return [500, 510, 520], [500, 500, 500], [700, 710], [500, 500]
 
 
-### GIVEN CODE TO TEST YOUR IMPLENTATION AND PLOT THE PICTURES
+# GIVEN CODE TO TEST YOUR IMPLENTATION AND PLOT THE PICTURES
 def show_image_and_gt(image, objs, fig_num=None):
     plt.figure(fig_num).clf()
     plt.imshow(image)
@@ -60,62 +61,31 @@ def show_image_and_gt(image, objs, fig_num=None):
             plt.legend()
 
 
-def convolve2D(image, kernel, padding=0, strides=1):
-    # Cross Correlation
-    kernel = np.flipud(np.fliplr(kernel))
-
-    # Gather Shapes of Kernel + Image + Padding
-    xKernShape = kernel.shape[0]
-    yKernShape = kernel.shape[1]
-    xImgShape = image.shape[0]
-    yImgShape = image.shape[1]
-
-    # Shape of Output Convolution
-    xOutput = int(((xImgShape - xKernShape + 2 * padding) / strides) + 1)
-    yOutput = int(((yImgShape - yKernShape + 2 * padding) / strides) + 1)
-    output = np.zeros((xOutput, yOutput))
-
-    # Apply Equal Padding to All Sides
-    if padding != 0:
-        imagePadded = np.zeros((image.shape[0] + padding*2, image.shape[1] + padding*2))
-        imagePadded[int(padding):int(-1 * padding), int(padding):int(-1 * padding)] = image
-        print(imagePadded)
+def search_by_color(image: np.ndarray, color: str) -> (array, typing.List):
+    """
+    Highlights the relevant color, convolutes the image and filter the list of attentions from it.
+    :param image: The image that transferred for processing.
+    :param color: The color of the attentions that should be found.
+    :return: The processed image and the list of attentions.
+    """
+    if color == "red":
+        img_color = image[:, :, 0]
+        con = sg.convolve(img_color, kernel, mode='same')
+        lst = np.argwhere(maximum_filter(con, 5) > 7000)
     else:
-        imagePadded = image
-
-    # Iterate through image
-    for y in range(image.shape[1]):
-        # Exit Convolution
-        if y > image.shape[1] - yKernShape:
-            break
-        # Only Convolve if y has gone down by the specified Strides
-        if y % strides == 0:
-            for x in range(image.shape[0]):
-                # Go to next row once kernel is out of bounds
-                if x > image.shape[0] - xKernShape:
-                    break
-                try:
-                    # Only Convolve if x has moved by the specified Strides
-                    if x % strides == 0:
-                        output[x, y] = (kernel * imagePadded[x: x + xKernShape, y: y + yKernShape]).sum()
-                except:
-                    break
-
-    plt.figure(56)
-    plt.clf()
-    h = plt.subplot(111)
-    plt.imshow(output)
-    plt.figure(57)
-    plt.clf()
-    plt.subplot(111, sharex=h, sharey=h)
-    plt.imshow(output)
+        print("Almog")
+        img_color = image[:, :, 1]
+        con = sg.convolve(img_color, kernel, mode='same')
+        lst = np.argwhere(maximum_filter(con, 30) > 7000)
+    return con, lst
 
 
 def test_find_tfl_lights(image_path, json_path=None, fig_num=None):
     """
     Run the attention code
     """
-    image = np.array(Image.open(image_path).convert('L'))
+    image = np.array(Image.open(image_path))
+
     if json_path is None:
         objects = None
     else:
@@ -123,7 +93,34 @@ def test_find_tfl_lights(image_path, json_path=None, fig_num=None):
         what = ['traffic light']
         objects = [o for o in gt_data['objects'] if o['label'] in what]
 
-    # show_image_and_gt(image, objects, fig_num)\
+    # show_image_and_gt(image, objects, fig_num)
+    #convolved_image, lst_red = search_by_color(image, "red")
+    convolved_image, lst_green = search_by_color(image, "green")
+
+    plt.figure(57)
+    plt.clf()
+    h = plt.subplot(111)
+    plt.imshow(convolved_image)
+
+    plt.figure(52)
+    plt.clf()
+    plt.subplot(111, sharex=h, sharey=h)
+    plt.imshow(Image.open(image_path))
+    
+    # for i in lst_red:
+    #     red_y, red_x = i
+    #     plt.plot(red_x, red_y, 'ro', color='r', markersize=1)
+    
+    for i in lst_green:
+        green_y, green_x = i
+        plt.plot(green_x, green_y, 'ro', color='g', markersize=1)
+
+    plt.figure(55)
+    plt.clf()
+    plt.subplot(111, sharex=h, sharey=h)
+    plt.imshow(convolved_image > 7000)
+
+    # show_image_and_gt(image, objects, fig_num)
 
     plt.figure(56)
     plt.clf()
@@ -152,27 +149,30 @@ def main(argv=None):
     parser.add_argument("-j", "--json", type=str, help="Path to json GT for comparison")
     parser.add_argument('-d', '--dir', type=str, help='Directory to scan images in')
     args = parser.parse_args(argv)
-    # default_base = "INSERT_YOUR_DIR_WITH_PNG_AND_JSON_HERE"
-    default_base = r"..\Images"
+    default_base = "../images"
 
     if args.dir is None:
         args.dir = default_base
+    # flist = glob.glob(os.path.join(args.dir, '*_leftImg8bit.png'))
+    flist = [r"C:\Users\IMOE001\images\berlin_000455_000019_leftImg8bit.png"]
+    for image in flist:
+        json_fn = image.replace('_leftImg8bit.png', '_gtFine_polygons.json')
 
     flist = glob.glob(os.path.join(args.dir, '*_leftImg8bit.png'))
 
     for image in flist:
         json_fn = image.replace('_leftImg8bit.png', '_gtFine_polygons.json')
 
-        if not os.path.exists(json_fn):
+    if not os.path.exists(json_fn):
             json_fn = None
-        test_find_tfl_lights(image, json_fn)
+    test_find_tfl_lights(image, json_fn)
 
     if len(flist):
         print("You should now see some images, with the ground truth marked on them. Close all to quit.")
     else:
         print("Bad configuration?? Didn't find any picture to show")
-    plt.savefig("mygraph.png")
-    #plt.show(block=True)
+
+    plt.show(block=True)
 
 
 if __name__ == '__main__':
