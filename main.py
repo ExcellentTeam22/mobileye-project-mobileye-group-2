@@ -1,5 +1,3 @@
-from numpy import array
-
 try:
     import os
     import json
@@ -8,6 +6,7 @@ try:
     import cv2
     import numpy as np
     from scipy import signal as sg
+    from numpy import array
     from scipy.ndimage import maximum_filter
     import typing
     from PIL import Image, ImageDraw
@@ -17,6 +16,8 @@ try:
 except ImportError:
     print("Need to fix the installation")
     raise
+
+seq = 0
 
 kernel = np.asarray(
     [[-69 / 58, -69 / 58, -69 / 58, -69 / 58, -69 / 58, -69 / 58, -69 / 58, -69 / 58, -69 / 58, -69 / 58, -69 / 58,
@@ -34,8 +35,7 @@ kernel = np.asarray(
      [-69 / 58, -69 / 58, -69 / 58, -69 / 58, -69 / 58, -69 / 58, -69 / 58, -69 / 58, -69 / 58, -69 / 58, -69 / 58,
       -69 / 58]])
 
-data = {'seq':[],'is_true':[],'is_ignore':[],'path':[],'x0':[],'x1':[],'y0':[],'y1':[],'col':[]}
-df=pd.DataFrame(data)
+df = pd.DataFrame(columns=['seq', 'is_true', 'is_ignore', 'path', 'x0', 'x1', 'y0', 'y1', 'col'])
 
 # def find_tfl_lights(c_image: np.ndarray, **kwargs):
 #     """
@@ -46,6 +46,7 @@ df=pd.DataFrame(data)
 #     """
 #     return [500, 510, 520], [500, 500, 500], [700, 710], [500, 500]
 
+
 def read_table():
     data = pd.read_hdf('attention_results.h5')
     pd.set_option('display.max_rows', None)
@@ -53,7 +54,7 @@ def read_table():
     return data
 
 
-### GIVEN CODE TO TEST YOUR IMPLENTATION AND PLOT THE PICTURES
+# GIVEN CODE TO TEST YOUR IMPLENTATION AND PLOT THE PICTURES
 def show_image_and_gt(image, objs, fig_num=None):
     plt.figure(fig_num).clf()
     plt.imshow(image)
@@ -185,7 +186,14 @@ def cal_size(path, x, y, zoom, color):
         return crop_image(image, x_left, y_up, 20, 60)
 
 
+def insert_to_table(seq, is_true, is_ignore, path, x0, x1, y0, y1, col, index):
+    new_path = "_" + col + is_true[0] + "_" + f"{index:05}" + ".png"
+    path = path.replace("_gtFine_color.png", new_path)
+    df.loc[len(df.index)] = [seq, is_true, is_ignore, path, x0, x1, y0, y1, col]
+
+
 def cropping():
+    global seq
     table = read_table()
     # for i in range(table.shape[0]):
     for i in range(1):
@@ -203,35 +211,37 @@ def cropping():
         color_image_path = path.replace("_leftImg8bit.png", "_gtFine_color.png")
         color_image = Image.open(color_image_path)
 
-        color=np.array(color_image)[int(y)][int(x)]
+        color = np.array(color_image)[int(y)][int(x)]
         if color.all != [250, 170, 30, 255]:
-            flag = "False"
-            # TODO: insert into table
-            print(flag)
+            flag = False
+            insert_to_table(seq, flag, False, color_image_path, x_left_top, x_right_bottom, y_left_top, y_right_bottom, color)
+            seq = seq + 1
 
         color_image = color_image.crop((x_left_top, y_left_top, x_right_bottom, y_right_bottom))
         color_image_array = np.array(color_image)
-        color_precent = (len(np.argwhere(color_image_array == [250, 170, 30, 255])) / (color_image_array.size)) * 100
+        color_percent = (len(np.argwhere(color_image_array == [250, 170, 30, 255])) / (color_image_array.size)) * 100
 
-        if color_precent > 80:
-            flag = "True"
-            # TODO: insert into table
-            print(flag)
+        if color_percent > 80:
+            flag = True
+            insert_to_table(seq, flag, False, color_image_path, x_left_top, x_right_bottom, y_left_top, y_right_bottom, color)
+            seq = seq + 1
+
         else:
-            flag = "Ignore"
-            # TODO: insert into table
+            flag = False
+            insert_to_table(seq, flag, True, color_image_path, x_left_top, x_right_bottom, y_left_top, y_right_bottom, color)
+            seq = seq + 1
 
-        plt.figure(57)
-        plt.clf()
-        plt.subplot(111)
-        plt.imshow(crop)
+    plt.figure(57)
+    plt.clf()
+    plt.subplot(111)
+    plt.imshow(crop)
 
-        plt.figure(59)
-        plt.clf()
-        plt.subplot(111)
-        plt.imshow(color_image)
+    plt.figure(59)
+    plt.clf()
+    plt.subplot(111)
+    plt.imshow(color_image)
 
-        plt.show(block=True)
+    plt.show(block=True)
 
 
 if __name__ == '__main__':
