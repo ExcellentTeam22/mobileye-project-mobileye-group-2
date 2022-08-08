@@ -1,92 +1,56 @@
+from numpy import array
+
 try:
     import os
     import json
     import glob
     import argparse
-
+    import cv2
     import numpy as np
     from scipy import signal as sg
-    from scipy.ndimage.filters import maximum_filter
-
-    from PIL import Image
-
+    from scipy.ndimage import maximum_filter
+    import typing
+    from PIL import Image, ImageDraw
+    import pandas as pd
+    import tables
     import matplotlib.pyplot as plt
 except ImportError:
     print("Need to fix the installation")
+    raise
 
 kernel = np.asarray(
-        [[-69 / 58, -69 / 58, -69 / 58, -69 / 58, -69 / 58, -69 / 58, -69 / 58, -69 / 58, -69 / 58, -69 / 58, -69 / 58, -69 / 58],
-         [-69 / 58, -69 / 58, -69 / 58, 1, 1, 1, 1, 1, 1, -69 / 58, -69 / 58, -69 / 58],
-         [-69 / 58, -69 / 58, 1, 1, 1, 1, 1, 1, 1, 1, -69 / 58, -69 / 58],
-         [-69 / 58, -69 / 58, 1, 1, 1, 1, 1, 1, 1, 1, -69 / 58, -69 / 58],
-         [-69 / 58, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, -69 / 58],
-         [-69 / 58, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, -69 / 58],
-         [-69 / 58, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, -69 / 58],
-         [-69 / 58, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, -69 / 58],
-         [-69 / 58, -69 / 58, 1, 1, 1, 1, 1, 1, 1, 1, -69 / 58, -69 / 58],
-         [-69 / 58, -69 / 58, 1, 1, 1, 1, 1, 1, 1, 1, -69 / 58, -69 / 58],
-         [-69 / 58, -69 / 58, -69 / 58, 1, 1, 1, 1, 1, 1, -69 / 58, -69 / 58, -69 / 58],
-         [-69 / 58, -69 / 58, -69 / 58, -69 / 58, -69 / 58, -69 / 58, -69 / 58, -69 / 58, -69 / 58, -69 / 58, -69 / 58, -69 / 58]])
-def processImage(image):
-    image = cv2.imread(image)
-    image = cv2.cvtColor(src=image, code=cv2.COLOR_BGR2GRAY)
-    return image
+    [[-69 / 58, -69 / 58, -69 / 58, -69 / 58, -69 / 58, -69 / 58, -69 / 58, -69 / 58, -69 / 58, -69 / 58, -69 / 58,
+      -69 / 58],
+     [-69 / 58, -69 / 58, -69 / 58, 1, 1, 1, 1, 1, 1, -69 / 58, -69 / 58, -69 / 58],
+     [-69 / 58, -69 / 58, 1, 1, 1, 1, 1, 1, 1, 1, -69 / 58, -69 / 58],
+     [-69 / 58, -69 / 58, 1, 1, 1, 1, 1, 1, 1, 1, -69 / 58, -69 / 58],
+     [-69 / 58, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, -69 / 58],
+     [-69 / 58, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, -69 / 58],
+     [-69 / 58, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, -69 / 58],
+     [-69 / 58, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, -69 / 58],
+     [-69 / 58, -69 / 58, 1, 1, 1, 1, 1, 1, 1, 1, -69 / 58, -69 / 58],
+     [-69 / 58, -69 / 58, 1, 1, 1, 1, 1, 1, 1, 1, -69 / 58, -69 / 58],
+     [-69 / 58, -69 / 58, -69 / 58, 1, 1, 1, 1, 1, 1, -69 / 58, -69 / 58, -69 / 58],
+     [-69 / 58, -69 / 58, -69 / 58, -69 / 58, -69 / 58, -69 / 58, -69 / 58, -69 / 58, -69 / 58, -69 / 58, -69 / 58,
+      -69 / 58]])
 
-def convolve2D(image, kernel, padding=0, strides=1):
-    # Cross Correlation
-    kernel = np.flipud(np.fliplr(kernel))
+data = {'seq':[],'is_true':[],'is_ignore':[],'path':[],'x0':[],'x1':[],'y0':[],'y1':[],'col':[]}
+df=pd.DataFrame(data)
 
-    # Gather Shapes of Kernel + Image + Padding
-    xKernShape = kernel.shape[0]
-    yKernShape = kernel.shape[1]
-    xImgShape = image.shape[0]
-    yImgShape = image.shape[1]
+# def find_tfl_lights(c_image: np.ndarray, **kwargs):
+#     """
+#     Detect candidates for TFL lights. Use c_image, kwargs and you imagination to implement
+#     :param c_image: The image itself as np.uint8, shape of (H, W, 3)
+#     :param kwargs: Whatever config you want to pass in here
+#     :return: 4-tuple of x_red, y_red, x_green, y_green
+#     """
+#     return [500, 510, 520], [500, 500, 500], [700, 710], [500, 500]
 
-    # Shape of Output Convolution
-    xOutput = int(((xImgShape - xKernShape + 2 * padding) / strides) + 1)
-    yOutput = int(((yImgShape - yKernShape + 2 * padding) / strides) + 1)
-    output = np.zeros((xOutput, yOutput))
-
-    # Apply Equal Padding to All Sides
-    if padding != 0:
-        imagePadded = np.zeros((image.shape[0] + padding*2, image.shape[1] + padding*2))
-        imagePadded[int(padding):int(-1 * padding), int(padding):int(-1 * padding)] = image
-        print(imagePadded)
-    else:
-        imagePadded = image
-
-    # Iterate through image
-    for y in range(image.shape[1]):
-        # Exit Convolution
-        if y > image.shape[1] - yKernShape:
-            break
-        # Only Convolve if y has gone down by the specified Strides
-        if y % strides == 0:
-            for x in range(image.shape[0]):
-                # Go to next row once kernel is out of bounds
-                if x > image.shape[0] - xKernShape:
-                    break
-                try:
-                    # Only Convolve if x has moved by the specified Strides
-                    if x % strides == 0:
-                        output[x, y] = (kernel * imagePadded[x: x + xKernShape, y: y + yKernShape]).sum()
-                except:
-                    break
-
-
-    return output
-
-
-def find_tfl_lights(c_image: np.ndarray, **kwargs):
-    """
-    Detect candidates for TFL lights. Use c_image, kwargs and you imagination to implement
-    :param c_image: The image itself as np.uint8, shape of (H, W, 3)
-    :param kwargs: Whatever config you want to pass in here
-    :return: 4-tuple of x_red, y_red, x_green, y_green
-    """
-    ### WRITE YOUR CODE HERE ###
-    ### USE HELPER FUNCTIONS ###
-    return [500, 510, 520], [500, 500, 500], [700, 710], [500, 500]
+def read_table():
+    data = pd.read_hdf("../attention_results.h5")
+    pd.set_option('display.max_rows', None)
+    print(data)
+    return data
 
 
 ### GIVEN CODE TO TEST YOUR IMPLENTATION AND PLOT THE PICTURES
@@ -103,14 +67,30 @@ def show_image_and_gt(image, objs, fig_num=None):
             plt.legend()
 
 
+def search_by_color(image: np.ndarray, color: str) -> (array, typing.List):
+    """
+    Highlights the relevant color, convolutes the image and filter the list of attentions from it.
+    :param image: The image that transferred for processing.
+    :param color: The color of the attentions that should be found.
+    :return: The processed image and the list of attentions.
+    """
+    if color == "red":
+        img_color = image[:, :, 0]
+        con = sg.convolve(img_color, kernel, mode='same')
+        lst = np.argwhere(maximum_filter(con, 5) > 7000)
+    # else:
+    #     img_color = image[:, :, 1]
+    #     con = sg.convolve(img_color, kernel, mode='same')
+    #     lst = np.argwhere(maximum_filter(con, 30) > 7000)
+    return con, lst
+
+
 def test_find_tfl_lights(image_path, json_path=None, fig_num=None):
     """
     Run the attention code
     """
+    read_table()
     image = np.array(Image.open(image_path))
-
-
-
     if json_path is None:
         objects = None
     else:
@@ -118,31 +98,31 @@ def test_find_tfl_lights(image_path, json_path=None, fig_num=None):
         what = ['traffic light']
         objects = [o for o in gt_data['objects'] if o['label'] in what]
 
-    #show_image_and_gt(image, objects, fig_num)
+    # show_image_and_gt(image, objects, fig_num)
+    convolved_image, lst_red = search_by_color(image, "red")
+    # convolved_image, lst_green = search_by_color(image, "green")
 
-    output = convolve2D(image, kernel)
-
-    plt.figure(56)
-    plt.clf()
-    h = plt.subplot(111)
-    plt.imshow(image)
-    img = np.array(Image.open(image_path).convert('L'))
-    convoluted_image = convolve2D(img, kernel)
     plt.figure(57)
     plt.clf()
-    plt.subplot(111, sharex=h, sharey=h)
-    plt.imshow(convoluted_image)
-    plt.figure(59)
+    h = plt.subplot(111)
+    plt.imshow(convolved_image)
+
+    plt.figure(52)
     plt.clf()
     plt.subplot(111, sharex=h, sharey=h)
-    plt.imshow(convoluted_image > 5000)
+    plt.imshow(Image.open(image_path))
+    for i in lst_red:
+        red_y, red_x = i
+        plt.plot(red_x, red_y, 'ro', color='r', markersize=1)
+    # for i in lst_green:
+    #     green_y, green_x = i
+    #     plt.plot(green_x, green_y, 'ro', color='g', markersize=1)
 
+    plt.figure(55)
+    plt.clf()
+    plt.subplot(111, sharex=h, sharey=h)
+    plt.imshow(convolved_image > 7000)
 
-
-
-    #red_x, red_y, green_x, green_y = find_tfl_lights(image)
-    #plt.plot(red_x, red_y, 'ro', color='r', markersize=4)
-    #plt.plot(green_x, green_y, 'ro', color='g', markersize=4)
 
 def main(argv=None):
     """It's nice to have a standalone tester for the algorithm.
@@ -159,11 +139,10 @@ def main(argv=None):
 
     if args.dir is None:
         args.dir = default_base
-    flist = glob.glob(os.path.join(args.dir, '*_leftImg8bit.png'))
-
+    # flist = glob.glob(os.path.join(args.dir, '*_leftImg8bit.png'))
+    flist = [r"C:\Users\IMOE001\images\aachen_000010_000019_leftImg8bit.png"]
     for image in flist:
         json_fn = image.replace('_leftImg8bit.png', '_gtFine_polygons.json')
-
         if not os.path.exists(json_fn):
             json_fn = None
         test_find_tfl_lights(image, json_fn)
@@ -175,5 +154,88 @@ def main(argv=None):
     plt.show(block=True)
 
 
+def crop_image(image, x_left, y_up, w, h):
+    image_crop = image.crop((x_left, y_up, x_left + w, y_up + h))
+    # image_crop.show()
+    return image_crop, x_left, y_up, w, h
+
+
+def cal_size(path, x, y, zoom, color):
+    x_100 = 20.0
+    x_zoom = x_100 * (1.0 - zoom)
+    y_zoom = 0.0
+    if color == 'r':
+        y_zoom = x_zoom
+    elif color == 'g':
+        y_100 = 100.0
+        y_zoom = y_100 * (1.0 - zoom)
+
+    x_left = x - x_zoom
+    y_up = y - y_zoom
+    image = Image.open(path)
+    if zoom == 0.0000:
+        return crop_image(image, x_left, y_up, 40, 120)
+    elif zoom == 0.0625:
+        return crop_image(image, x_left, y_up, 37.5, 112.5)
+    elif zoom == 0.1250:
+        return crop_image(image, x_left, y_up, 35, 105)
+    elif zoom == 0.2500:
+        return crop_image(image, x_left, y_up, 30, 90)
+    elif zoom == 0.5000:
+        return crop_image(image, x_left, y_up, 20, 60)
+
+
+def cropping():
+    table = read_table()
+    # for i in range(table.shape[0]):
+    for i in range(len(table)-5909):
+        path = table.iloc[4, :]['path']
+        x = table.iloc[4, :]['x']
+        y = table.iloc[4, :]['y']
+        zoom = table.iloc[4, :]['zoom']
+        col = table.iloc[4, :]['col']
+        lib = path.split("_")[0]
+        path = "..\\leftImg8bit_trainvaltest\\leftImg8bit\\train\\" + lib + "\\" + path
+        crop, x_left_top, y_left_top, w, h = cal_size(path, x, y, zoom, col)
+        x_right_bottom = x_left_top + w
+        y_right_bottom = y_left_top + h
+        index=table.index(i)
+        color_image_path = path.replace("_leftImg8bit.png", "_gtFine_color.png")
+        color_image = Image.open(color_image_path)
+
+        color=np.array(color_image)[int(y)][int(x)]
+        if color.all != [250, 170, 30, 255]:
+            flag = "False"
+            # TODO: insert into table "insert_to_table"
+            continue
+
+        color_image = color_image.crop((x_left_top, y_left_top, x_right_bottom, y_right_bottom))
+        color_image_array = np.array(color_image)
+        color_precent = (len(np.argwhere(color_image_array == [250, 170, 30, 255])) / (color_image_array.size)) * 100
+
+        if color_precent > 80:
+            flag = "True"
+            # TODO: insert into table
+            print(flag)
+        else:
+            flag = "Ignore"
+            # TODO: insert into table
+
+        plt.figure(57)
+        plt.clf()
+        plt.subplot(111)
+        plt.imshow(crop)
+
+        plt.figure(59)
+        plt.clf()
+        plt.subplot(111)
+        plt.imshow(color_image)
+
+        plt.show(block=True)
+
+
 if __name__ == '__main__':
-    main()
+    # main()
+    # read_table()
+    cropping()
+    print(df)
