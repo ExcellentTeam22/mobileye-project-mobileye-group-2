@@ -462,7 +462,6 @@ def nn_examiner_example(scores_h5_filename=r'..\stam_output\scores.h5'):
 
 
 if __name__ == '__main__':
-    nn_examiner_example(r'C:\Users\dori\Documents\SNC\code\scaleup\model_0229_on_train\scores.h5')
+    nn_examiner_example("../images_nn")
 
-    # ihist_example()
-    # grid_presenter_example('..\..\..\data\selected')
+
