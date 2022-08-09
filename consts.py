@@ -16,7 +16,7 @@ Y0 = 'y0'
 X1 = 'x1'
 Y1 = 'y1'
 ZOOM = 'zoom'
-PATH = 'path'
+PATH = 'crop_path'
 FULL_PATH = 'full_path'
 CROP_PATH = 'crop_path'
 COL = 'col'
@@ -35,5 +35,5 @@ models_output_dir = 'logs_and_models'
 logs_dir = 'logs'
 
 # Crop size:
-default_crop_w = 32
-default_crop_h = 96
+default_crop_w = 54
+default_crop_h = 140
