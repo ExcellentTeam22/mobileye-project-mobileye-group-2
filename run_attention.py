@@ -105,10 +105,10 @@ def main(argv=None):
     # parser.add_argument("-j", "--json", type=str, help="Path to json GT for comparison")
     parser.add_argument('-d', '--dir', type=str, help='Directory to scan images in')
     args = parser.parse_args(argv)
-    default_base = r'C:\Users\owner\Documents\mobileye\NN'
+    default_base = "../images_nn"
     if args.dir is None:
         args.dir = default_base
-    flist = glob.glob(os.path.join(args.dir, 'berlin_000522_000019_leftImg8bit'))
+    flist = glob.glob(os.path.join(args.dir, r"../images_nn"))
     for image in flist:
         json_fn = image.replace('_leftImg8bit.png', '_gtFine_polygons.json')
         if not os.path.exists(json_fn):
