@@ -190,8 +190,8 @@ def examine_my_results(base_dir,
         values = [os.path.abspath(os.path.join(prefix, f)) for f in series]
         df2[new_col] = values
         return df2
-    crop_data = update_path(dataset.crop_data, 'path', 'crop_path', dataset.crop_dir)
-    full_data = update_path(dataset.attn_data, 'path', 'full_path', full_images_dir)
+    crop_data = update_path(dataset.crop_data, 'original_path', 'crop_path', dataset.crop_dir)
+    full_data = update_path(dataset.attn_data, 'original_path', 'full_path', full_images_dir)
 
     # Ok, from here on, some pandas tricks...
     results = pd.DataFrame(scores) \
@@ -212,8 +212,8 @@ def examine_my_results(base_dir,
 
 
 def main():
-    base_dir = r'C:\Users\dori\Documents\SNC\data\train_demo'
-    full_images_dir = r'C:\Users\dori\Documents\SNC\data\train\full'
+    base_dir = ""
+    full_images_dir = "../images_nn"
     model_name = 'my_model_final_2'
     train_dataset = TrafficLightDataSet(base_dir, full_images_dir, is_train=True)
     test_dataset = TrafficLightDataSet(base_dir, full_images_dir, is_train=False)
