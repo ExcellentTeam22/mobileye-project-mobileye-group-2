@@ -212,7 +212,7 @@ def examine_my_results(base_dir,
 
 def main():
     base_dir = ""
-    full_images_dir = "../images_nn"
+    full_images_dir = r"C:\Users\owner\Documents\mobileye\mobileye-project-mobileye-group-2\attention_results"
     model_name = 'my_model_final_2'
     train_dataset = TrafficLightDataSet(base_dir, full_images_dir, is_train=True)
     test_dataset = TrafficLightDataSet(base_dir, full_images_dir, is_train=False)
