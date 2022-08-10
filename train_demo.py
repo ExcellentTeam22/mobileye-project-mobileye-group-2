@@ -190,7 +190,7 @@ def examine_my_results(base_dir,
         df2[new_col] = values
         return df2
     crop_data = update_path(dataset.crop_data, 'original_path', 'crop_path', dataset.crop_dir)
-    full_data = update_path(dataset.attn_data, 'original_path', 'full_path', full_images_dir)
+    full_data = update_path(dataset.attn_data, 'path', 'full_path', full_images_dir)
 
     # Ok, from here on, some pandas tricks...
     results = pd.DataFrame(scores) \
