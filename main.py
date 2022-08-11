@@ -47,13 +47,13 @@ df=pd.DataFrame(data)
 #     return [500, 510, 520], [500, 500, 500], [700, 710], [500, 500]
 
 def read_table():
-    data = pd.read_hdf('attention_results.h5')
+    data = pd.read_hdf("../attention_results.h5")
     pd.set_option('display.max_rows', None)
     print(data)
     return data
 
 
-### GIVEN CODE TO TEST YOUR IMPLENTATION AND PLOT THE PICTURES
+# GIVEN CODE TO TEST YOUR IMPLENTATION AND PLOT THE PICTURES
 def show_image_and_gt(image, objs, fig_num=None):
     plt.figure(fig_num).clf()
     plt.imshow(image)
@@ -188,26 +188,26 @@ def cal_size(path, x, y, zoom, color):
 def cropping():
     table = read_table()
     # for i in range(table.shape[0]):
-    for i in range(1):
+    for i in range(len(table)-5909):
         path = table.iloc[4, :]['path']
         x = table.iloc[4, :]['x']
         y = table.iloc[4, :]['y']
         zoom = table.iloc[4, :]['zoom']
         col = table.iloc[4, :]['col']
         lib = path.split("_")[0]
-        path = "C:\\Users\\IMOE001\\Downloads\\leftImg8bit_trainvaltest\\leftImg8bit\\train\\" + lib + "\\" + path
+        path = "..\\leftImg8bit_trainvaltest\\leftImg8bit\\train\\" + lib + "\\" + path
         crop, x_left_top, y_left_top, w, h = cal_size(path, x, y, zoom, col)
         x_right_bottom = x_left_top + w
         y_right_bottom = y_left_top + h
-
+        index=table.index(i)
         color_image_path = path.replace("_leftImg8bit.png", "_gtFine_color.png")
         color_image = Image.open(color_image_path)
 
         color=np.array(color_image)[int(y)][int(x)]
         if color.all != [250, 170, 30, 255]:
             flag = "False"
-            # TODO: insert into table
-            print(flag)
+            # TODO: insert into table "insert_to_table"
+            continue
 
         color_image = color_image.crop((x_left_top, y_left_top, x_right_bottom, y_right_bottom))
         color_image_array = np.array(color_image)
