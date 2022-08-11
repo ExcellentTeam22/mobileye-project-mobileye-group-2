@@ -53,7 +53,7 @@ def read_table():
     return data
 
 
-### GIVEN CODE TO TEST YOUR IMPLENTATION AND PLOT THE PICTURES
+# GIVEN CODE TO TEST YOUR IMPLENTATION AND PLOT THE PICTURES
 def show_image_and_gt(image, objs, fig_num=None):
     plt.figure(fig_num).clf()
     plt.imshow(image)
